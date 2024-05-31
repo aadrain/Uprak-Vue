@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Remedial Vue.js</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+      }
+      .taskbar {
+        background-color: #000;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 10px 20px;
+        position: fixed;
+        top: 0;
+        width: 100%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+      }
+      .taskbar-content {
+        display: flex;
+        align-items: center;
+      }
+      .taskbar h1 {
+        color: #fff;
+        margin: 0 10px;
+      }
+      .invoice-form {
+        max-width: 800px;
+        margin: 80px auto 20px;
+        padding: 20px;
+        border: 1px solid #ddd;
+      }
+      .details,
+      .total-payment,
+      .item-entry,
+      .summary,
+      .payment {
+        margin: 20px 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+      table,
+      th,
+      td {
+        border: 1px solid #ddd;
+        text-align: center;
+      }
+      th,
+      td {
+        padding: 10px;
+      }
+      button {
+        margin-top: 10px;
+      }
+      .logo img {
+        max-width: 100px;
+        height: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div class="taskbar">
+        <div class="taskbar-content">
+          <h1>For A Real Dream</h1>
+          <div class="logo">
+            <img src="asset/logo.jpeg" alt="Logo" />
+          </div>
+        </div>
+      </div>
+
+      <div class="invoice-form">
+        <div class="details">
+          <div>
+            <label>No. Nota:</label>
+            <input type="text" v-model="nota" />
+          </div>
+          <div>
+            <label>Pelanggan:</label>
+            <input type="text" v-model="customer" />
+          </div>
+          <div>
+            <label>Tanggal:</label>
+            <input type="date" v-model="date" />
+          </div>
+        </div>
+
+        <div class="total-payment">
+          <h2>Total Pembayaran:</h2>
+          <h3>Rp. {{ totalPayment.toFixed(2) }}</h3>
+        </div>
+
+        <div class="item-entry">
+          <label>Kode Barang:</label>
+          <select v-model="selectedItem">
+            <option v-for="item in items" :value="item.id">
+              {{ item.id }}
+            </option>
+          </select>
+          <label>Nama Barang:</label>
+          <span>{{ selectedItemName }}</span>
+          <label>Quantity:</label>
+          <input type="number" v-model="quantity" min="1" />
+          <button @click="addItem">Tambah</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>ID Barang</th>
+              <th>Nama Barang</th>
+              <th>Harga Satuan</th>
+              <th>Qty</th>
+              <th>Jumlah</th>
+              <th>Opsi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, index) in cart" :key="index">
+              <td>{{ item.id }}</td>
+              <td>{{ item.name }}</td>
+              <td>Rp. {{ item.price.toFixed(2) }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>Rp. {{ (item.price * item.quantity).toFixed(2) }}</td>
+              <td><button @click="removeItem(index)">Hapus</button></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="summary">
+          <div>
+            <label>Sub Total:</label>
+            <span>Rp. {{ subTotal.toFixed(2) }}</span>
+          </div>
+          <div>
+            <label>Diskon:</label>
+            <input type="number" v-model="discount" />%
+            <span>Rp. {{ discountAmount.toFixed(2) }}</span>
+          </div>
+          <div>
+            <label>Total Harga:</label>
+            <span>Rp. {{ totalPrice.toFixed(2) }}</span>
+          </div>
+        </div>
+
+        <div class="payment">
+          <div>
+            <label>Bayar:</label>
+            <input type="number" v-model="payment" />
+          </div>
+          <div>
+            <label>Kembalian:</label>
+            <span>Rp. {{ change.toFixed(2) }}</span>
+          </div>
+          <button @click="completeTransaction">Selesai</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      new Vue({
+        el: "#app",
+        data: {
+          nota: "",
+          customer: "",
+          date: "",
+          items: [
+            { id: 1, name: "Jaket", price: 100000 },
+            { id: 2, name: "Celana", price: 150000 },
+            { id: 3, name: "Kaos", price: 50000 },
+            // Add more items as needed
+          ],
+          selectedItem: null,
+          quantity: 1,
+          cart: [],
+          discount: 0,
+          payment: 0,
+        },
+        computed: {
+          selectedItemName() {
+            const item = this.items.find(
+              (item) => item.id === this.selectedItem
+            );
+            return item ? item.name : "";
+          },
+          totalPayment() {
+            return this.cart.reduce(
+              (total, item) => total + item.price * item.quantity,
+              0
+            );
+          },
+          subTotal() {
+            return this.totalPayment;
+          },
+          discountAmount() {
+            return this.subTotal * (this.discount / 100);
+          },
+          totalPrice() {
+            return this.subTotal - this.discountAmount;
+          },
+          change() {
+            return this.payment - this.totalPrice;
+          },
+        },
+        methods: {
+          addItem() {
+            const item = this.items.find(
+              (item) => item.id === this.selectedItem
+            );
+            if (item && this.quantity > 0) {
+              this.cart.push({ ...item, quantity: this.quantity });
+              this.selectedItem = null;
+              this.quantity = 1;
+            }
+          },
+          removeItem(index) {
+            this.cart.splice(index, 1);
+          },
+          completeTransaction() {
+            alert("Transaction completed!");
+          },
+        },
+      });
+    </script>
+  </body>
+</html>
